@@ -6,6 +6,8 @@ from telnetlib  import Telnet
 from time       import sleep
 from re         import match
 from yaml       import safe_dump
+from influxdb   import InfluxDBClient
+from datetime   import datetime
 
 _telnet_server = {
     "host": "gamer.intentropycs.com",
@@ -13,6 +15,11 @@ _telnet_server = {
     }
 
 _7d2d_passwd = "7DaysAdmin"
+
+_idb_server = {
+        "host": "192.168.77.30",
+        "port": 8086,
+        }
 
 
 def type_correction( value ):
@@ -29,8 +36,30 @@ def type_correction( value ):
         return False
     else:
         return value
-    
-    
+
+def idb_now():
+    """Return InfluxDB time string for now"""
+    return datetime.utcnow().strftime( "%Y-%m-%dT%H:%M:%SZ" )
+
+def is_idb( db_name , idb_client ):
+    """Check if an InfluxDB already exists"""
+    for idb in idb_client.get_list_database():
+        if idb.get( "name" ) == db_name:
+            return True
+    return False
+
+def idb_point( measurement, tags , fields ):
+    """Return an IDB point
+
+        measurement is a string
+        tags and fields are dicts
+    """
+    return {
+        "measurement": measurement,
+        "tags": tags,
+        "time": idb_now(),
+        "fields": fields,
+        }
 
 
 if __name__ == '__main__':
@@ -48,13 +77,12 @@ if __name__ == '__main__':
         tn.write( b"lp\n" )
         _response = tn.read_until( b"in the game\r\n" ).decode()
         _list_item_regex = "^[0-9]*\.\ .*$"
-        _players = []
+        _players = {}
         for line in _response.split( "\n" ):
             if line:
                 if match( _list_item_regex , line ):
                     _line_split = line.split( "," )
                     _player = {}
-                    _are_int = ( 0 , 9 , 10 ,11 , 12 , 13 , 14 , 18 )  # These are indexes where values are int and not str
                     for num , data in enumerate( _line_split ):
                         if match( _list_item_regex , data ):
                             data = data.split( ". " )[ 1 ]
@@ -69,8 +97,7 @@ if __name__ == '__main__':
                                 _key , _value = data.split( "=" )
                                 if _value.endswith( "\r" ):
                                     _value = _value[ :-1 ]
-                                if num in _are_int:
-                                    _value = int( _value )
+                                _value = type_correction( _value )
                                 _player[ _key ] = _value
                     # Handle pos and rot
                     _pos_rot = [ f"{_line_split[2]}{_line_split[3]}{_line_split[4]}" , f"{_line_split[5]}{_line_split[6]}{_line_split[7]}" ]
@@ -81,12 +108,13 @@ if __name__ == '__main__':
                         _vector = []
                         for dimension in _value[ 1:-1 ].split():
                             _vector.append( float( dimension ) )
-                        _value = tuple( _vector )
+                        _value = dict( zip( [ "x" , "y" , "z" ] , _vector ) )
                         _player[ _key ] = _value
-                    # Set Remote to Bool
-                    _player[ "remote" ] = _player.get( "remote" ) == "True"
-                    
-                    _players.append( _player )
+                    # Set name
+                    _name = _line_split[ 1 ]
+                    if _name.startswith( " " ):
+                        _name = _name[ 1: ]
+                    _players[ _name ] = _player
         _ret[ "players" ]  = _players
 
         # Get GameStat
@@ -103,8 +131,81 @@ if __name__ == '__main__':
                 _game_stats[ _key ] = type_correction( _value )
         _ret[ "GameStat" ] = _game_stats
 
+        # GetGame pref
+        tn.write( b"gg\n" )
+        _response = tn.expect( [ b"GamePref.ZombiePlayers.*" ] )[ 2 ].decode()
+        _game_prefs = {}
+        for line in _response.split( "\n" ):
+            if line.endswith( "\r" ):
+                line = line[ :-1 ]
+            if line.startswith( "GamePref" ):
+                line = line[ len( "GamePref." ): ]
+                if " = " in line:
+                    _key , _value = line.split( " = " )
+                _game_prefs[ _key ] = type_correction( _value )
+        _ret[ "GamePref" ] = _game_prefs
+        
+        # GetGame pref
+        tn.write( b"getoptions\n" )
+        _response = tn.expect( [ b"GamePref.OptionsZoomMouseSensitivity.*" ] )[ 2 ].decode()
+        _game_opts = {}
+        for line in _response.split( "\n" ):
+            if line.endswith( "\r" ):
+                line = line[ :-1 ]
+            if line.startswith( "GamePref" ):
+                line = line[ len( "GamePref." ): ]
+                if " = " in line:
+                    _key , _value = line.split( " = " )
+                _game_opts[ _key ] = type_correction( _value )
+        _ret[ "GameOpts" ] = _game_opts
+
+
+        # Game Time
+        tn.write( b"gt\n" )
+        _response = tn.expect( [ b"Day.*" ] )[ 2 ].decode()
+        _game_time = {}
+        for line in _response.split( "\n" ):
+            if line.endswith( "\r" ):
+                line = line[ :-1 ]
+            if line.startswith( "Day" ):
+                _day , _time = line.split( ", " )
+                _day = type_correction( _day[ len( "DAY " ): ] )
+                _hour , _minute = _time.split( ":" )
+                _hour = type_correction( _hour )
+                _minute = type_correction( _minute )
+        _ret[ "GameTime" ] = {
+            "day": _day,
+            "hour": _hour,
+            "minute": _minute,
+            }
+            
+
+
+
         # Exit telnet
         tn.write( b"exit\n" )
 
-    
-    print( safe_dump( _ret ) )
+    # influxDB logging for players
+    _players = _ret.get( "players" , {} )
+    _idb_points = []
+    for _player_name in _players:
+        _player_data = _players.get( _player_name )
+        for key in _player_data:
+            _value = _player_data.get( key )
+            if key == "rot" or key == "pos":
+                # Handle pos and rot seperate, if I really want to graph position
+                pass
+            else:
+                _idb_points.append(
+                    idb_point(
+                        "72d2_players",
+                        tags = { "name", _player_name},
+                        fields = { key: _value },
+                        )
+                    )
+    db = "7d2d"
+    idb_client = InfluxDBClient( **_idb_server )
+    if not is_idb( db , idb_client ):
+        idb_client.create_database( db )
+    idb_client.switch_database( db )
+    idb_client.write_points( _idb_points )

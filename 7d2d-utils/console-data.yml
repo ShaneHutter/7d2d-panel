@@ -1,0 +1,9 @@
+telnet:
+  host: gamer.intentropycs.com
+  port: 8081
+  password: 7DaysAdmin
+influxdb:
+  enabled: False
+  host: 192.168.77.30
+  port: 8086
+  db: 7d2d

@@ -5,22 +5,14 @@
 from telnetlib  import Telnet
 from time       import sleep
 from re         import match
-from yaml       import safe_dump
+from yaml       import safe_dump , safe_load
 from influxdb   import InfluxDBClient
 from datetime   import datetime
 
-_telnet_server = {
-    "host": "gamer.intentropycs.com",
-    "port": 8081,
-    }
 
-_7d2d_passwd = "7DaysAdmin"
-
-_idb_server = {
-        "host": "192.168.77.30",
-        "port": 8086,
-        }
-
+def load_config( path ):
+    with open( path , "r" ) as config_file:
+        return safe_load( config_file.read() )
 
 def type_correction( value ):
     """Convert dataytype if it matches the regex for an in, float, or bool"""
@@ -63,6 +55,13 @@ def idb_point( measurement, tags , fields ):
 
 
 if __name__ == '__main__':
+    _config = load_config( "console-data.yml" )
+    _telnet_server = _config.get( "telnet" , {} )
+    _7d2d_passwd = _telnet_server.pop( "password" )
+    _idb_server = _config.get( "influxdb" )
+    _enable_idb = _idb_server.pop( "enabled" )
+    _db = _idb_server.pop( "db" )
+
 
     _ret = {}
     with Telnet( **_telnet_server ) as tn:
@@ -186,26 +185,26 @@ if __name__ == '__main__':
         tn.write( b"exit\n" )
 
     # influxDB logging for players
-    _players = _ret.get( "players" , {} )
-    _idb_points = []
-    for _player_name in _players:
-        _player_data = _players.get( _player_name )
-        for key in _player_data:
-            _value = _player_data.get( key )
-            if key == "rot" or key == "pos":
-                # Handle pos and rot seperate, if I really want to graph position
-                pass
-            else:
-                _idb_points.append(
-                    idb_point(
-                        "72d2_players",
-                        tags = { "name", _player_name},
-                        fields = { key: _value },
+    if _enable_idb:
+        _players = _ret.get( "players" , {} )
+        _idb_points = []
+        for _player_name in _players:
+            _player_data = _players.get( _player_name )
+            for key in _player_data:
+                _value = _player_data.get( key )
+                if key == "rot" or key == "pos":
+                    # Handle pos and rot seperate, if I really want to graph position
+                    pass
+                else:
+                    _idb_points.append(
+                        idb_point(
+                            "72d2_players",
+                            tags = { "name", _player_name},
+                            fields = { key: _value },
+                            )
                         )
-                    )
-    db = "7d2d"
-    idb_client = InfluxDBClient( **_idb_server )
-    if not is_idb( db , idb_client ):
-        idb_client.create_database( db )
-    idb_client.switch_database( db )
-    idb_client.write_points( _idb_points )
+        idb_client = InfluxDBClient( **_idb_server )
+        if not is_idb( _db , idb_client ):
+            idb_client.create_database( _db )
+        idb_client.switch_database( _db )
+        idb_client.write_points( _idb_points )

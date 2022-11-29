@@ -6,8 +6,10 @@ from xmltodict  import (
     parse as xml_parse,
     unparse as xml_unparse,
     )
-from yaml       import safe_dump
 from copy       import deepcopy
+from json       import dumps
+from yaml       import safe_dump
+from flask      import Flask
 
 
 def load_players_xml( path ):
@@ -63,7 +65,11 @@ def load_ttp_bin( player , path ):
 
 def parse_ttp_bin( ttp_bin ):
     """An attempt to parse player stats from the players ttp file"""
-    _ret = {}
+    _ret = {
+        "attributes": {},
+        "perks": {},
+        "skills": {},
+        }
     ATTRIBUTES = ( 
         "attperception", "attstrength", "attfortitude", 
         "attagility", "attintellect", "attbooks",
@@ -137,7 +143,7 @@ def parse_ttp_bin( ttp_bin ):
         "perkspearhunter8complete",
         )
     SKILLS = (
-        "skillPointTip", "skillperceptioncombat", "skillperceptiongeneral",
+        "skillperceptioncombat", "skillperceptiongeneral",
         "skillperceptionscavenging", "skillstrengthcombat", "skillstrengthgeneral",
         "skillstrengthconstruction", "skillfortitudecombat", "skillfortitudesurvival",
         "skillfortituderecovery", "skillagilitycombat", "skillagilityathletics",
@@ -150,14 +156,42 @@ def parse_ttp_bin( ttp_bin ):
         "skillsniper", "skillspearhunter", "skillurbancombat",
         "skilltechjunkie", "skillwastetreasures",
         )
+    def get_attribute( attribute ):
+        if type( attribute ) == str:
+            attribute = attribute.encode()
+        _attribute_start = ttp_bin.find( attribute )
+        _attribute_end = _attribute_start + len( attribute )
+        _key = ttp_bin[ _attribute_start:_attribute_end ].decode()
+        _value = int( ttp_bin[ _attribute_end ] )
+        return { _key: _value }
+
+
+    for attr in ATTRIBUTES:
+        _ret[ "attributes" ].update( get_attribute( attr ) )
+
+    for skill in SKILLS:
+        _ret[ "skills" ].update( get_attribute( skill ) )
+
+    for perk in PERKS:
+        _ret[ "perks" ].update( get_attribute( perk ) )
+
     return _ret
 
-if __name__ == '__main__':
+def get_plater_data():
     _players_xml_path = "player_data"
     players = load_players_xml( _players_xml_path )
+    _output = {}
+    for player in players:
+        _output[ player ] = {}
+        _player_info = players.get( player )
+        ttp_bin = load_ttp_bin( _player_info , _players_xml_path )
+        player_data = parse_ttp_bin( ttp_bin )
+        _output[ player ].update( player_data )
+        _output[ player ].update( { "info": _player_info } )
+    return dumps( _output )
 
-    #print( safe_dump( players ) )
-    lordie_wolfe = players.get( "Lordie Wolfe" )
-    ttp_bin = load_ttp_bin( lordie_wolfe , _players_xml_path )
+app = Flask( __name__ )
 
-    print( ttp_bin )
+@app.route( '/' )
+def player_stats():
+    return get_plater_data()

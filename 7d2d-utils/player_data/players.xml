@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<persistentplayerdata>
+  <player platform="EOS" userid="0002029bee374766bebac669f79b8b9c" playername="Lordie Wolfe" lastlogin="2022-11-27 15:08:01">
+    <acl platform="EOS" userid="0002a6309cb7457fa7116d58ee06d5b1" />
+    <acl platform="EOS" userid="0002ac26cc3d4c588e460d42a24087e7" />
+    <acl platform="EOS" userid="0002f27e310544e79b8b76e3656c97fc" />
+    <lpblock pos="670,24,918" />
+    <bedroll pos="670,27,462" />
+  </player>
+  <player platform="EOS" userid="00024ece7d1b41f3bd967eb3adef38f2" playername="=Zb=ArtOfFLighT" lastlogin="2022-10-31 00:47:49">
+    <bedroll pos="-2871,37,-2465" />
+  </player>
+  <player platform="EOS" userid="00026a2f5ac94ca5a33cb469c4bf0d3a" playername="What Is Dirk?" lastlogin="2022-10-31 06:15:10">
+    <bedroll pos="2916,44,39" />
+  </player>
+  <player platform="EOS" userid="0002ac26cc3d4c588e460d42a24087e7" playername="danaher91" lastlogin="2022-11-28 11:57:14">
+    <acl platform="EOS" userid="0002029bee374766bebac669f79b8b9c" />
+    <acl platform="EOS" userid="0002f27e310544e79b8b76e3656c97fc" />
+    <acl platform="EOS" userid="0002a6309cb7457fa7116d58ee06d5b1" />
+    <lpblock pos="671,31,461" />
+    <bedroll pos="668,29,462" />
+  </player>
+  <player platform="EOS" userid="00021877c0594a6db657a499f4483e7d" playername="Khan_Charlie_Boy" lastlogin="2022-11-01 20:52:28" />
+  <player platform="EOS" userid="0002a6309cb7457fa7116d58ee06d5b1" playername="Lach" lastlogin="2022-11-20 01:40:07">
+    <acl platform="EOS" userid="0002029bee374766bebac669f79b8b9c" />
+    <acl platform="EOS" userid="0002ac26cc3d4c588e460d42a24087e7" />
+    <lpblock pos="2408,36,1600" />
+    <bedroll pos="667,30,462" />
+  </player>
+  <player platform="EOS" userid="00029de573b54ecd85ba1b5ec8dedd7a" playername="QwackAttak" lastlogin="2022-11-04 04:17:46">
+    <bedroll pos="3012,39,-757" />
+  </player>
+  <player platform="EOS" userid="0002f27e310544e79b8b76e3656c97fc" playername="AdventureDad3" lastlogin="2022-11-06 08:40:11">
+    <acl platform="EOS" userid="0002029bee374766bebac669f79b8b9c" />
+    <acl platform="EOS" userid="0002ac26cc3d4c588e460d42a24087e7" />
+    <bedroll pos="2604,38,-1441" />
+  </player>
+  <player platform="EOS" userid="000254e25ac14cf68f20b3da13666763" playername="CaloricSurplus" lastlogin="2022-11-07 16:51:44">
+    <acl platform="EOS" userid="000201567bf04b3a9966568b2a105d5f" />
+    <lpblock pos="3017,45,-833" />
+    <bedroll pos="3021,42,-831" />
+  </player>
+  <player platform="EOS" userid="000201567bf04b3a9966568b2a105d5f" playername="AMOGUS" lastlogin="2022-11-07 15:52:37">
+    <acl platform="EOS" userid="000254e25ac14cf68f20b3da13666763" />
+    <bedroll pos="3022,42,-831" />
+  </player>
+  <player platform="EOS" userid="0002dd819cc64df7abd2abb7b3366a7c" playername="Cuba Pete" lastlogin="2022-11-09 07:54:34">
+    <lpblock pos="2792,45,-766" />
+    <bedroll pos="2928,46,-824" />
+  </player>
+</persistentplayerdata>
